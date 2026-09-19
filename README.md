@@ -1,10 +1,23 @@
 # Face Detection App
 
+![Face Detection App in action](docs/screenshot.png)
+
 A real-time face detection web application that captures camera frames, sends them to a Python API, and draws a green bounding box around detected faces in the browser.
 
 Built as an internship project combining an **ASP.NET Core MVC** frontend with a **Python FastAPI** backend powered by **OpenCV** and the **YuNet** face detection model.
 
 ---
+
+## 🏃 Quick Start
+
+**Two parts must be running at the same time:**
+
+**1. Python API** (face detection backend)
+
+```bash
+cd PythonAPI
+venv\Scripts\activate
+uvicorn app:app --host 127.0.0.1 --port 8000
 
 ## How It Works
 
