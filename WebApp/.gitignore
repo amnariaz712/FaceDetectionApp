@@ -1,0 +1,24 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.csproj.user
+
+# Build results
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+
+# NuGet
+*.nupkg
+project.lock.json
+
+# Publish profiles
+*.pubxml
+*.pubxml.user
+
+# Secrets
+appsettings.*.local.json
+secrets.json

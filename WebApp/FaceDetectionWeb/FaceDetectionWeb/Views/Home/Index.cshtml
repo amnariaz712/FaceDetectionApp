@@ -1,0 +1,306 @@
+﻿@{
+    ViewData["Title"] = "Face Detection";
+}
+
+<div class="container text-center mt-4">
+
+    <h1>Real-Time Face Detection</h1>
+
+    <p class="text-muted">
+        OpenCV Face Detection & Automatic Snapshot
+    </p>
+
+    <div style="position: relative; display: inline-block;">
+
+        <video id="video"
+               width="640"
+               height="480"
+               autoplay
+               playsinline
+               style="border: 2px solid #333;">
+        </video>
+
+        <canvas id="canvas"
+                width="640"
+                height="480"
+                style="position: absolute;
+                       left: 0;
+                       top: 0;
+                       pointer-events: none;">
+        </canvas>
+
+    </div>
+
+    <br />
+
+    <button id="startButton"
+            class="btn btn-primary mt-3">
+        Start Camera
+    </button>
+
+    <button id="snapshotButton"
+            class="btn btn-success mt-3"
+            disabled>
+        Take Snapshot
+    </button>
+
+    <div class="mt-4">
+
+        <h3>Snapshot</h3>
+
+        <img id="snapshot"
+             style="max-width: 640px;
+                    display: none;
+                    border: 2px solid #333;" />
+
+    </div>
+
+</div>
+
+
+<script>
+
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const startButton = document.getElementById("startButton");
+    const snapshotButton = document.getElementById("snapshotButton");
+    const snapshot = document.getElementById("snapshot");
+
+    let stream = null;
+    let detecting = false;
+
+    // Prevent repeated automatic snapshots
+    let autoSnapshotTaken = false;
+
+
+    // ==============================
+    // START CAMERA
+    // ==============================
+
+    startButton.addEventListener("click", async function () {
+
+        try {
+
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
+            });
+
+            video.srcObject = stream;
+
+            snapshotButton.disabled = false;
+
+            detecting = true;
+
+            detectFaces();
+
+        }
+        catch (error) {
+
+            alert("Could not access camera: " + error.message);
+
+        }
+
+    });
+
+
+    // ==============================
+    // FACE DETECTION
+    // ==============================
+
+    async function detectFaces() {
+
+        if (!detecting) {
+            return;
+        }
+
+        if (video.readyState >= 2) {
+
+            const tempCanvas = document.createElement("canvas");
+
+            tempCanvas.width = video.videoWidth;
+            tempCanvas.height = video.videoHeight;
+
+            const tempContext = tempCanvas.getContext("2d");
+
+            tempContext.drawImage(
+                video,
+                0,
+                0,
+                tempCanvas.width,
+                tempCanvas.height
+            );
+
+            tempCanvas.toBlob(async function (blob) {
+
+                const formData = new FormData();
+
+                formData.append(
+                    "file",
+                    blob,
+                    "frame.jpg"
+                );
+
+                try {
+
+                    const response = await fetch(
+                        "/Home/Detect",
+                        {
+                            method: "POST",
+                            body: formData
+                        }
+                    );
+
+                    const result = await response.json();
+
+                    drawFaces(result);
+
+                }
+                catch (error) {
+
+                    console.error(error);
+
+                }
+
+            }, "image/jpeg", 0.7);
+
+        }
+
+        setTimeout(detectFaces, 300);
+
+    }
+
+
+    // ==============================
+    // DRAW DETECTED FACES
+    // ==============================
+
+    function drawFaces(result) {
+
+        ctx.clearRect(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+
+        // No face detected
+        if (!result.faces || result.faces.length === 0) {
+
+            // Allow detection again
+            autoSnapshotTaken = false;
+
+            return;
+        }
+
+
+        const scaleX = canvas.width / result.width;
+        const scaleY = canvas.height / result.height;
+
+
+        result.faces.forEach(face => {
+
+            const x = face.x * scaleX;
+            const y = face.y * scaleY;
+
+            const width = face.width * scaleX;
+            const height = face.height * scaleY;
+
+
+            // Green face box
+            ctx.strokeStyle = "lime";
+            ctx.lineWidth = 3;
+
+            ctx.strokeRect(
+                x,
+                y,
+                width,
+                height
+            );
+
+
+            // Confidence text
+            ctx.fillStyle = "lime";
+            ctx.font = "16px Arial";
+
+            ctx.fillText(
+                "Face " + Math.round(face.confidence * 100) + "%",
+                x,
+                y - 8
+            );
+
+        });
+
+
+        // ==============================
+        // AUTOMATIC SNAPSHOT
+        // ==============================
+
+        if (!autoSnapshotTaken) {
+
+            autoSnapshotTaken = true;
+
+            takeSnapshot();
+
+
+            // Allow another automatic
+            // snapshot after 3 seconds
+
+            setTimeout(function () {
+
+                autoSnapshotTaken = false;
+
+            }, 3000);
+
+        }
+
+    }
+
+
+    // ==============================
+    // TAKE SNAPSHOT
+    // ==============================
+
+    function takeSnapshot() {
+
+        const snapshotCanvas = document.createElement("canvas");
+
+        snapshotCanvas.width = video.videoWidth;
+        snapshotCanvas.height = video.videoHeight;
+
+        const snapshotContext =
+            snapshotCanvas.getContext("2d");
+
+
+        snapshotContext.drawImage(
+            video,
+            0,
+            0,
+            snapshotCanvas.width,
+            snapshotCanvas.height
+        );
+
+
+        snapshot.src =
+            snapshotCanvas.toDataURL("image/jpeg");
+
+
+        snapshot.style.display = "block";
+
+    }
+
+
+    // ==============================
+    // MANUAL SNAPSHOT BUTTON
+    // ==============================
+
+    snapshotButton.addEventListener("click", function () {
+
+        takeSnapshot();
+
+    });
+
+</script>

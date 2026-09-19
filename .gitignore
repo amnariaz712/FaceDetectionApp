@@ -1,0 +1,25 @@
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+logs/
+
+# Secrets
+.env
+*.env
+secrets.json
+
+# Published / build output
+Published/
+publish/
+*.publishsettings
